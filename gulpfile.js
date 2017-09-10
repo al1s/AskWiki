@@ -24,7 +24,7 @@ const dirs = {
   buildPath: "./build/"
 };
 
-const copiedJs = ['./node_modules/whatwg-fetch/fetch.js'];
+const copiedJs = ['./node_modules/jasmine/fetch.js'];
 
 let postCssPlugins = [
   autoprefixer({browsers: ['last 2 version', 'Safari >= 8']})//,
@@ -46,6 +46,7 @@ gulp.task('clean', function () {
 gulp.task('style', function () {
     const sourcemaps = require('gulp-sourcemaps');
     const wait = require('gulp-wait');
+    console.log(dirs.srcPath + '/style.css');
     return gulp.src(dirs.srcPath + '/style.css')
       .pipe(plumber({
         errorHandler: function(err) {
@@ -179,9 +180,7 @@ gulp.task('serve', ['build'], function() {
     port: 8080,
   });
   // Слежение за стилями
-  gulp.watch([
-    dirs.srcPath + '/style.css',
-  ], ['style']);
+  gulp.watch(dirs.srcPath + '/*.css', ['watch:style']);
   // Слежение за добавочными JS
   if(copiedJs.length) {
     gulp.watch(copiedJs, ['watch:copied:js']);
@@ -192,7 +191,7 @@ gulp.task('serve', ['build'], function() {
     dirs.blocksDirName + '/**/*.html'
   ], {cwd: dirs.srcPath}, ['watch:html']);
   // Слежение за JS
-  gulp.watch(dirs.srcPath + '/script.js', ['watch:js']);
+  gulp.watch(dirs.srcPath + '/*.js', ['watch:js']);
 });
 
 // Браузерсинк с 3-м галпом — такой браузерсинк...
@@ -200,6 +199,7 @@ gulp.task('watch:img', ['copy:img'], reload);
 gulp.task('watch:copied:js', ['copy:js'], reload);
 gulp.task('watch:html', ['html'], reload);
 gulp.task('watch:js', ['js'], reload);
+gulp.task('watch:style', ['style'], reload);
 
 function reload (done) {
   browserSync.reload();

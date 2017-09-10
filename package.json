@@ -1,5 +1,5 @@
 {
-  "name": "weather_now",
+  "name": "wikiviewer",
   "version": "1.0.0",
   "description": "Get your local current weather",
   "main": "index.html",
@@ -8,23 +8,29 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/al1s/WeatherNow.git"
+    "url": "git+https://github.com/al1s/wikiviewer.git"
   },
   "keywords": [
     "FreeCodeCamp",
-    "weather"
+    "WIKI"
   ],
   "author": "alstof",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/al1s/WeatherNow/issues"
+    "url": "https://github.com/al1s/wikiviewer/issues"
   },
-  "homepage": "https://github.com/al1s/WeatherNow#readme",
+  "homepage": "https://github.com/al1s/wikiviewer#readme",
   "devDependencies": {
     "autoprefixer": "^7.1.2",
     "babel-preset-env": "^1.6.0",
     "browser-sync": "^2.18.13",
     "del": "^3.0.0",
+    "eslint": "^4.6.1",
+    "eslint-config-airbnb": "^15.1.0",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-jsx-a11y": "^6.0.2",
+    "eslint-plugin-react": "^7.3.0",
+    "franc-min": "^3.1.1",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
     "gulp-cleancss": "^0.2.2",
@@ -40,7 +46,8 @@
     "gulp-sequence": "^0.4.6",
     "gulp-size": "^2.1.0",
     "gulp-uglify": "^3.0.0",
-    "gulp-wait": "0.0.2"
+    "gulp-wait": "0.0.2",
+    "jasmine": "^2.8.0"
   },
   "dependencies": {
     "whatwg-fetch": "^2.0.3"

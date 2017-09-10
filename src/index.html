@@ -4,20 +4,19 @@
     <title>WIKI search</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta charset="utf-8">
-    <link rel="shortcut icon" type="image/png" href="jasmine/lib/jasmine-2.6.4/jasmine_favicon.png">
-    <link rel="stylesheet" type="text/css" href="jasmine/lib/jasmine-2.6.4/jasmine.css">
-
-    <script type="text/javascript" src="jasmine/lib/jasmine-2.6.4/jasmine.js"></script>
-    <script type="text/javascript" src="jasmine/lib/jasmine-2.6.4/jasmine-html.js"></script>
-    <script type="text/javascript" src="jasmine/lib/jasmine-2.6.4/boot.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Exo+2" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
   </head>
+
   <body>
-    <form class="search" action="/" method="post">
+    <form class="search" action="" method="">
       <label for="search__input"></label>
-      <input class="search__input" type="text" name="search__input" value="" placeholder="Enter your search phrase">
-      <button class="search__btn" type="submit" name="search__btn"></button>
-      <button type="button" name="button">Feel lucky!</button>
+      <input class="search__input" id="searchInput"type="text" name="search__input" value="" placeholder="Enter your search phrase">
+      <button class="search__btn" id="searchBtnSubmit" type="button" name="search__btn">Search</button>
+      <button class="search__btn" id="searchBtnRandom" type="button" name="random__btn">Roll the dice!</button>
     </form>
+  <div class="external__data"></div>
   </body>
+  <!-- <script async src="js/script.js"></script> -->
   <script async src="js/script.js"></script>
 </html>
