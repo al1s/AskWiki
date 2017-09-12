@@ -1,33 +1,35 @@
-/*jshint esversion: 6 */
+/* jshint esversion: 6 */
 /* jshint node: true */
+
 'use strict';
 
-const gulp = require("gulp");
-const sourcemaps = require("gulp-sourcemaps");
-const babel = require("gulp-babel");
-const concat = require("gulp-concat");
+const gulp = require('gulp');
+const sourcemaps = require('gulp-sourcemaps');
+const babel = require('gulp-babel');
 const del = require('del');
 const plumber = require('gulp-plumber');
 const notify = require('gulp-notify');
-const gulpIf = require('gulp-if');
+// const gulpIf = require('gulp-if');
 const size = require('gulp-size');
 const cleanss = require('gulp-cleancss');
-const autoprefixer = require("autoprefixer");
+const autoprefixer = require('autoprefixer');
 const browserSync = require('browser-sync').create();
 const gulpSequence = require('gulp-sequence');
 const newer = require('gulp-newer');
 const image = require('gulp-image');
 const postcss = require('gulp-postcss');
+// const uncss = require('postcss-uncss');
 
 const dirs = {
-  srcPath: "./src/",
-  buildPath: "./build/"
+  srcPath: './src/',
+  buildPath: './build/'
 };
 
 const copiedJs = ['./node_modules/jasmine/fetch.js'];
 
-let postCssPlugins = [
-  autoprefixer({browsers: ['last 2 version', 'Safari >= 8']})//,
+const postCssPlugins = [
+  autoprefixer({ browsers: ['last 2 version', 'Safari >= 8'] })//,
+  // uncss({ html: [`${dirs.srcPath}/*.html`] })
   // mqpacker({
   //   sort: true
   // }),
@@ -35,46 +37,46 @@ let postCssPlugins = [
   // inlineSVG()
 ];
 
-gulp.task('clean', function () {
+gulp.task('clean', () => {
   console.log('---------- Очистка папки сборки');
   return del([
-    dirs.buildPath + '/**/*',
-    '!' + dirs.buildPath + '/readme.md'
+    `${dirs.buildPath}/**/*`,
+    `!${dirs.buildPath}/readme.md`
   ]);
 });
 
-gulp.task('style', function () {
-    const sourcemaps = require('gulp-sourcemaps');
-    const wait = require('gulp-wait');
-    console.log(dirs.srcPath + '/style.css');
-    return gulp.src(dirs.srcPath + '/style.css')
-      .pipe(plumber({
-        errorHandler: function(err) {
-          notify.onError({
-            title: 'Single style compilation error',
-            message: err.message
-          })(err);
-          this.emit('end');
-        }
-      }))
-      .pipe(wait(100))
-      .pipe(sourcemaps.init())
-      .pipe(postcss(postCssPlugins))
-      .pipe(cleanss())
-      .pipe(sourcemaps.write('/'))
-      .pipe(size({
-        title: 'Размер',
-        showFiles: true,
-        showTotal: false,
-      }))
-      .pipe(gulp.dest(dirs.buildPath + '/css'))
-      .pipe(browserSync.stream({match: '**/*.css'}));
-  });
+gulp.task('style', () => {
+  const sourcemaps = require('gulp-sourcemaps');
+  const wait = require('gulp-wait');
+  console.log(dirs.srcPath + '/style.css');
+  return gulp.src(dirs.srcPath + '/style.css')
+    .pipe(plumber({
+      errorHandler: (err) => {
+        notify.onError({
+          title: 'Single style compilation error',
+          message: err.message
+        })(err);
+        this.emit('end');
+      }
+    }))
+    .pipe(wait(100))
+    .pipe(sourcemaps.init())
+    .pipe(postcss(postCssPlugins))
+    .pipe(cleanss())
+    .pipe(sourcemaps.write('/'))
+    .pipe(size({
+      title: 'Размер',
+      showFiles: true,
+      showTotal: false,
+    }))
+    .pipe(gulp.dest(dirs.buildPath + '/css'))
+    .pipe(browserSync.stream({ match: '**/*.css' }));
+});
 
-gulp.task('html', function() {
+gulp.task('html', () => {
   return gulp.src(dirs.srcPath + '/*.html')
     .pipe(plumber({
-      errorHandler: function(err) {
+      errorHandler: (err) => {
         notify.onError({
           title: 'HTML compilation error',
           message: err.message
@@ -85,13 +87,13 @@ gulp.task('html', function() {
     .pipe(gulp.dest(dirs.buildPath));
 });
 
-gulp.task('js', function () {
+gulp.task('js',  () => {
   const uglify = require('gulp-uglify');
   const concat = require('gulp-concat');
-  return gulp.src(dirs.srcPath + "/*.js")
+  return gulp.src(dirs.srcPath + '/*.js')
     .pipe(sourcemaps.init())
     .pipe(plumber({
-      errorHandler: function(err) {
+      errorHandler: (err) => {
         notify.onError({
           title: 'Javascript concat/uglify error',
           message: err.message
@@ -100,20 +102,20 @@ gulp.task('js', function () {
       }
     }))
     .pipe(babel({
-			presets: ['env']
-		}))
+      presets: ['env']
+    }))
     .pipe(uglify())
-    .pipe(sourcemaps.write("."))
+    .pipe(sourcemaps.write('.'))
     .pipe(size({
       title: 'Размер',
       showFiles: true,
       showTotal: false,
     }))
-    .pipe(gulp.dest(dirs.buildPath + "/js"));
+    .pipe(gulp.dest(dirs.buildPath + '/js'));
 });
 
-gulp.task('copy:js', function (callback) {
-  if(copiedJs.length) {
+gulp.task('copy:js', (callback) => {
+  if (copiedJs.length) {
     return gulp.src(copiedJs)
       .pipe(size({
         title: 'Размер',
@@ -121,28 +123,20 @@ gulp.task('copy:js', function (callback) {
         showTotal: false,
       }))
       .pipe(gulp.dest(dirs.buildPath + '/js'));
-  }
-  else {
-    callback();
-  }
+  } else callback();
 });
 
-gulp.task('img:opt', function (callback) {
+gulp.task('img:opt',  (callback) => {
   const imagemin = require('gulp-imagemin');
-  return gulp.src(dirs.srcPath + "/img/*.{jpg,jpeg,gif,png,svg}")
+  return gulp.src(dirs.srcPath + '/img/*.{jpg,jpeg,gif,png,svg}')
     .pipe(image({
       jpegRecompress: false//,
-      //jpegoptim: true,
-      //mozjpeg: true
     }))
-    // .pipe(imagemin({
-    //   progressive: true
-    // }))
     .pipe(gulp.dest(dirs.buildPath));
 });
 
-gulp.task('copy:img', function () {
-  return gulp.src(dirs.srcPath + "/img" + "/*.{jpg,jpeg,gif,png,svg}")
+gulp.task('copy:img', () => {
+  return gulp.src(dirs.srcPath + '/img' + '/*.{jpg,jpeg,gif,png,svg}')
     .pipe(newer(dirs.buildPath + '/img'))  // оставить в потоке только изменившиеся файлы
     .pipe(size({
       title: 'Размер',
@@ -152,7 +146,7 @@ gulp.task('copy:img', function () {
     .pipe(gulp.dest(dirs.buildPath + '/img'));
 });
 
-gulp.task('build', function (callback) {
+gulp.task('build', (callback) => {
   gulpSequence(
     'clean',
     ['style', 'js', 'copy:js', 'copy:img'],
@@ -162,7 +156,7 @@ gulp.task('build', function (callback) {
 });
 
 // Отправка в GH pages (ветку gh-pages репозитория)
-gulp.task('deploy', function() {
+gulp.task('deploy', () => {
   const ghPages = require('gulp-gh-pages');
   console.log('---------- Публикация содержимого ./build/ на GH pages');
   return gulp.src(dirs.buildPath + '**/*')
@@ -172,7 +166,7 @@ gulp.task('deploy', function() {
 // Задача по умолчанию
 gulp.task('default', ['serve']);
 
-gulp.task('serve', ['build'], function() {
+gulp.task('serve', ['build'], () => {
   browserSync.init({
     server: dirs.buildPath,
     startPath: 'index.html',
@@ -189,10 +183,15 @@ gulp.task('serve', ['build'], function() {
   gulp.watch([
     '*.html',
     dirs.blocksDirName + '/**/*.html'
-  ], {cwd: dirs.srcPath}, ['watch:html']);
+  ], { cwd: dirs.srcPath }, ['watch:html']);
   // Слежение за JS
   gulp.watch(dirs.srcPath + '/*.js', ['watch:js']);
 });
+
+function reload (done) {
+  browserSync.reload();
+  done();
+}
 
 // Браузерсинк с 3-м галпом — такой браузерсинк...
 gulp.task('watch:img', ['copy:img'], reload);
@@ -200,8 +199,3 @@ gulp.task('watch:copied:js', ['copy:js'], reload);
 gulp.task('watch:html', ['html'], reload);
 gulp.task('watch:js', ['js'], reload);
 gulp.task('watch:style', ['style'], reload);
-
-function reload (done) {
-  browserSync.reload();
-  done();
-}

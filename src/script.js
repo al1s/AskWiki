@@ -2,7 +2,39 @@
 // TODO: clear the page if the input value is undefined;
 // TODO: Speed up the load and displaying the data;
 // TODO: Limit the keys to react at only to meaningful - letters and control;
-// TODO: make backspace return a user to the previous page (now it just completely leave the page);
+// TODO: + fix backspace to return a user to the previous page (now it just completely leave the page);
+// TODO: fix backspace when we switch from another resource to AskWiki by back or forward;
+// TODO: add initial fetch to establish connection with wiki; it seems to make following requests faster;
+// TODO: fix images size - it's too crane
+
+function getWikiPageId(title) {
+  const preferedLang = navigator.language || navigator.userLanguage;
+  const httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?action=query&format=json&titles=${title}&formatversion=2&origin=*`;
+  const headers = new Headers();
+  headers.append('Api-User-Agent', 'Example/1.0');
+  return fetch(httpAddr, { headers })
+    .then((resp) => {
+      if (resp.ok) return resp.json();
+      throw new Error(`Error while retrieving page with id ${pageId}`);
+    })
+    .then((data) => {
+      if (data.error) {
+        console.warn(data.error.info);
+        throw { code: data.error.code, message: data.error.info };
+      } else {
+        return data.query.pages[0].pageid 
+      }
+    })
+    .catch(err => Promise.reject(err));
+}
+
+function resolveLink(link) {
+  const re = new RegExp(/.*\/(.+)$/, 'g');
+  const title = re.exec(link)[0];
+  console.log(title);
+  const pageId = getWikiPageId(title).then(data => {return data});
+  return pageId
+}
 
 // showPage adds a page content to a given DOM element.
 // It replaces all relative links in the page with Wikipedia domain prefixed.
@@ -16,6 +48,7 @@ function showPage(data, dataElm) {
     if (/wiki|w/g.test(anchors[i].pathname)) {
       anchors[i].host = `${preferedLang}.wikipedia.org`;
       anchors[i].port = 443;
+      // console.log(resolveLink(anchors[i]))
     }
   }
 }
@@ -55,7 +88,7 @@ function slideIn(elm) {
     elm.childNodes.forEach((item, ndx, arr) => {
       // console.log(item.classList);
       if (item.classList.contains('--slide-from-top')) {
-        console.log(`slideIn:, cycle=${cycle}, move '${item.firstChild.innerHTML}' from top`);
+        // console.log(`slideIn:, cycle=${cycle}, move '${item.firstChild.innerHTML}' from top`);
         promises[ndx] = new Promise((resolve, reject) => {
           const a = setTimeout(() => {
             clearTimeout(timeoutArrOut.shift());
@@ -63,21 +96,19 @@ function slideIn(elm) {
             resolve('Ok');
           }, (ndx) * 30);
           timeoutArrOut.push(a);
-
         });
       } else {
-        console.log(`slideIn:, cycle=${cycle}, move '${item.firstChild.innerHTML}' to bottom`);
+        // console.log(`slideIn:, cycle=${cycle}, move '${item.firstChild.innerHTML}' to bottom`);
         promises[ndx] = new Promise((resolve, reject) => {
           const a = setTimeout(() => {
             clearTimeout(timeoutArrIn.pop());
             item.classList.add('--slide-to-bottom');
             const b = setTimeout(() => {
               clearTimeout(b);
-              // item.classList.add('--slide-from-top');
               item.classList.remove('--slide-to-bottom');
             }, 300);
             resolve('Ok');
-          }, (arr.length - ndx) * 30);
+          }, (arr.length - ndx) * 10);
           timeoutArrIn.push(a);
         });
       }
@@ -85,7 +116,6 @@ function slideIn(elm) {
     return promises;
   }
 }
-
 // showData takes the data received from Wikipedia search engine
 // and insert it into given DOM element. 
 // It expects 'data' object to consist:
@@ -95,7 +125,6 @@ function slideIn(elm) {
 //    description - short extract from the article;
 function showData(data, dataElm) {
   const pageId = data.pageid;
-  // console.log(pageId);
   const title = data.title;
   const mediaBoxElm = document.createElement('div');
   const titleElm = document.createElement('h2');
@@ -112,7 +141,7 @@ function showData(data, dataElm) {
     imageElm.src = thumbnailSource;
     imageElm.height = thumbnailHeight;
     imageElm.width = thumbnailWidth;
-    // imageElm.classList.add('media-box__image');
+    imageElm.classList.add('media-box__image');
     mediaBoxContainerElm.appendChild(imageElm);
   }
 
@@ -137,75 +166,64 @@ function showData(data, dataElm) {
 }
 
 function searchWikiData(phrase) {
-  return new Promise ((resolve, reject) => {
-    const dataElm = document.querySelector('.external__data');
-    const preferedLang = navigator.language || navigator.userLanguage;
-    // let httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?action=query&format=json&prop=extracts%7Cpageimages%7Crevisions&titles=${phrase}&redirects=1&formatversion=2&exsentences=2&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=300&rvprop=timestamp&origin=*`;
-    // let httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?action=query&format=json&uselang=user&prop=extracts%7Cpageimages&list=search&redirects=1&formatversion=2&exsentences=2&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=300&piprop=thumbnail&pithumbsize=300&srsearch=${phrase}&srlimit=10&origin=*`;
-    //   let httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?
-    //       action=query&
-    //       format=json&
-    //       uselang=user&
-    //       prop=pageimages%7Cextracts&list=&
-    //       generator=search&
-    //       redirects=1&
-    //       formatversion=2&
-    //       piprop=thumbnail&
-    //       pithumbsize=300&
-    //       exsentences=2&
-    //       exintro=1&
-    //       explaintext=1&
-    //       gsrsearch=${phrase}&
-    //       origin=*`;
-    const httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?
-        action=query&
-        format=json&
-        generator=prefixsearch&
-        prop=pageprops%7Cpageimages%7Cpageterms&
-        redirects=&
-        ppprop=displaytitle&
-        piprop=thumbnail&
-        pithumbsize=80&
-        pilimit=6&
-        wbptterms=description&
-        gpssearch=${phrase}&
-        gpsnamespace=0&
-        gpslimit=6&
-        origin=*`;
-    const headers = new Headers();
-    headers.append('Api-User-Agent', 'Example/1.0');
-    fetch(httpAddr, { headers })
-      .then((resp) => {
-        console.log(`fetched data for cycle=${cycle}`);
-        if (resp.ok) return resp.json();
-        throw new Error(`Could not get the Wikipage for ${phrase}!`);
-      })
-      .then((data) => {
-        if (data.error) {
-          console.warn(data.error.info);
-          throw { code: data.error.code, message: data.error.info };
-          // } else if (!data.query || !data.query.search || !data.query.pages || data.query.pages[0].missing) {
-        } else if (!data.query || !data.query.pages) {
-          console.warn(data.query);
-          // console.log(data);
-          throw { code: 'NoSuchPage', message: `There is no pages for ${phrase}` }
-        } else {
-          // console.log(data.query.pages);
-          resolve(data.query.pages || data.query.search);
-          // const pages = data.query.pages || data.query.search;
-          // Object.keys(pages).forEach((item) => {
-          //   showData(pages[item], dataElm);
-          // });
-        }
-      })
-      // .catch(err => console.error(`${err.code || ''} ${err.message} ${err.stack})`));
-      .catch(err => reject(err));
-  });
+  const preferedLang = navigator.language || navigator.userLanguage;
+  // let httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?action=query&format=json&prop=extracts%7Cpageimages%7Crevisions&titles=${phrase}&redirects=1&formatversion=2&exsentences=2&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=300&rvprop=timestamp&origin=*`;
+  // let httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?action=query&format=json&uselang=user&prop=extracts%7Cpageimages&list=search&redirects=1&formatversion=2&exsentences=2&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=300&piprop=thumbnail&pithumbsize=300&srsearch=${phrase}&srlimit=10&origin=*`;
+  //   let httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?
+  //       action=query&
+  //       format=json&
+  //       uselang=user&
+  //       prop=pageimages%7Cextracts&list=&
+  //       generator=search&
+  //       redirects=1&
+  //       formatversion=2&
+  //       piprop=thumbnail&
+  //       pithumbsize=300&
+  //       exsentences=2&
+  //       exintro=1&
+  //       explaintext=1&
+  //       gsrsearch=${phrase}&
+  //       origin=*`;
+  const httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?
+      action=query&
+      format=json&
+      generator=prefixsearch&
+      prop=pageprops%7Cpageimages%7Cpageterms&
+      redirects=&
+      ppprop=displaytitle&
+      piprop=thumbnail&
+      pithumbsize=80&
+      pilimit=6&
+      wbptterms=description&
+      gpssearch=${phrase}&
+      gpsnamespace=0&
+      gpslimit=6&
+      origin=*`;
+  const headers = new Headers();
+  headers.append('Api-User-Agent', 'Example/1.0');
+  return fetch(httpAddr, { headers })
+    .then((resp) => {
+      console.log(`fetched data for cycle=${cycle}`);
+      if (resp.ok) return resp.json();
+      throw new Error(`Could not get the Wikipage for ${phrase}!`);
+    })
+    .then((data) => {
+      if (data.error) {
+        console.warn(data.error.info);
+        throw new Error({ code: data.error.code, message: data.error.info });
+      } else if (!data.query || !data.query.pages) {
+        console.warn(data.query);
+        throw new Error({ code: 'NoSuchPage', message: `There is no pages for ${phrase}` });
+      } else {
+        return data.query.pages || data.query.search;
+      }
+    })
+    .catch(err => Promise.reject(err));
 }
 
 function clearData(dataElm) {
   while (dataElm.firstChild) {
-    console.log(`removal: cycle=${cycle}, elm is ${dataElm.firstChild.firstChild.innerHTML}`);
+    // console.log(`removal: cycle=${cycle}, elm is ${dataElm.firstChild.firstChild.innerHTML}`);
     (dataElm.removeChild(dataElm.firstChild));
   }
 }
@@ -219,13 +237,9 @@ function cleanInput(formInput) {
 }
 
 function searchPhrase() {
-  const dataElm = document.querySelector('.external__data');
-  const inputElm = document.querySelector('#searchInput');
-  // TODO: some user input validation stuff
   const userInput = cleanInput(inputElm.value);
-  // console.log(userInput);
-  console.group(`Cycle_${cycle}`);
-  console.log(`First slideIn, searchPhrase cleaning phase for cycle=${cycle}`);
+  // console.group(`Cycle_${cycle}`);
+  // console.log(`First slideIn, searchPhrase cleaning phase for cycle=${cycle}`);
   Promise.all([searchWikiData(userInput), ...slideIn(dataElm)])
     .then((data) => {
       clearData(dataElm);
@@ -240,11 +254,7 @@ function searchPhrase() {
       console.log(`Second slideIn inside searchWikiData for cycle=${cycle}`);
       slideIn(dataElm);
     })
-    // .then(() => {
-    //   console.log('Finished with cleaning, search is the next step')
-    //   searchWikiData(userInput);
-    // });
-  console.groupEnd(`Cycle_${cycle}`);
+  // console.groupEnd(`Cycle_${cycle}`);
 }
 
 function searchRandom() {
@@ -266,10 +276,10 @@ function delayMethod(label, callback, time) {
 
 function debounce(func, wait) {
   let timeout;
-  return function() {
+  return () => {
     const context = this;
     const args = arguments;
-    const later = function() {
+    const later = () => {
       timeout = null;
       func.apply(context, args);
     };
@@ -278,10 +288,10 @@ function debounce(func, wait) {
   };
 }
 
-
 const submitBtnElm = document.querySelector('#searchBtnSubmit');
 const randomBtnElm = document.querySelector('#searchBtnRandom');
 const inputElm = document.querySelector('#searchInput');
+const dataElm = document.querySelector('.external__data');
 let cycle = 1;
 const delayFnOnInput = debounce(searchPhrase, 250, false);
 
@@ -289,8 +299,6 @@ submitBtnElm.addEventListener('click', searchPhrase);
 randomBtnElm.addEventListener('click', searchRandom);
 inputElm.addEventListener('keyup', (e) => {
   console.log(e.target.value);
-  // e.preventDefault();
-  // debounce(searchPhrase(), 2000, true);
   delayFnOnInput();
   cycle++;
 });
