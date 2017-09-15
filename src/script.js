@@ -1,5 +1,5 @@
 // +TODO: fix address bar - remove submit parameters from it;
-// TODO: clear the page if the input value is undefined;
+// +TODO: clear the page if the input value is undefined;
 // TODO: Speed up the load and displaying the data;
 // +TODO: Limit the keys to react at only to meaningful - letters and control;
 // +TODO: fix backspace to return a user to the previous page (now it just completely leave the page);
@@ -9,15 +9,49 @@
 
 
 /* eslint func-names: ['error', 'never'] */
+/* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
+/* eslint no-param-reassign: ["error", { "props": false }] */
+
 const localSpace = (function () {
+  /*
+   * Constants
+   */
+  const searchFormElm = document.querySelector('.search');
+  // const submitBtnElm = document.querySelector('#searchBtnSubmit');
+  const randomBtnElm = document.querySelector('#searchBtnRandom');
+  const inputElm = document.querySelector('#searchInput');
+  const dataElm = document.querySelector('.external__data');
+  const delayFnOnInput = debounce(searchPhrase, 250, false);
+  const keysNotAllowed = ['Meta', 'Alt', 'CapsLock', 'Shift', 'Control', 'Tab', 'Escape', 
+    'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'];
+
+  function moveUp() {
+    inputElm.removeEventListener('keyup', moveUp);
+    searchFormElm.classList.add('search--upper');
+    searchFormElm.classList.remove('search--middle');
+    inputElm.classList.remove('search__input--middle');
+    randomBtnElm.classList.remove('search__btn--middle');
+  }
+
+  function resetOnEmptySearch() {
+    if (inputElm.value.length === 0) {
+      // inputElm.addEventListener('keyup', moveUp);
+      // searchFormElm.classList.add('search--middle');
+      // searchFormElm.classList.remove('search--upper');
+      // inputElm.classList.add('search__input--middle');
+      // randomBtnElm.classList.add('search__btn--middle');
+      clearData(dataElm);
+    }
+  }
+
   /* 
   * showPage()
   * adds a page content to a given DOM element.
   * It replaces all relative links in the page with Wikipedia domain prefixed.
   */
-  function showPage(data, dataElm) {
+  function showPage(data, wrapperElm) {
     const preferedLang = navigator.language || navigator.userLanguage;
-    dataElm.innerHTML = data.parse.text['*'] || data.parse.text;
+    wrapperElm.innerHTML = data.parse.text['*'] || data.parse.text;
     const anchors = document.querySelectorAll('a');
 
     for (let i = 0, l = anchors.length; i < l; i++) {
@@ -48,9 +82,8 @@ const localSpace = (function () {
       .then((data) => {
         if (data.error) {
           console.warn(data.error.info);
-          throw { code: data.error.code, message: data.error.info };
+          throw new Error({ code: data.error.code, message: data.error.info });
         } else {
-          const dataElm = document.querySelector('.external__data');
           showPage(data, dataElm);
         }
       })
@@ -63,12 +96,12 @@ const localSpace = (function () {
   * and to bottom to disappear.
   * Uses parent element as a parameter and do the magic on all childelements
   */
-  function slideIn(elm) {
-    if (elm.childNodes) {
+  function slideIn(wrapperElm) {
+    let promises = [];
+    if (wrapperElm.childNodes) {
       const timeoutArrIn = [];
       const timeoutArrOut = [];
-      const promises = [];
-      elm.childNodes.forEach((item, ndx, arr) => {
+      wrapperElm.childNodes.forEach((item, ndx, arr) => {
         // console.log(item.classList);
         if (item.classList.contains('--slide-from-top')) {
           // console.log(`slideIn:, cycle=${cycle}, move '${item.firstChild.innerHTML}' from top`);
@@ -95,8 +128,8 @@ const localSpace = (function () {
           });
         }
       });
-      return promises;
-    }
+    } else promises = [];
+    return promises;
   }
 
   /*
@@ -169,7 +202,7 @@ const localSpace = (function () {
 
   /*
   * searchWikiData(phrase, numberOfResults)
-  * looks for given number of best fitted results to the phrase
+  * looks for a given number of best fitted results to the phrase
   * @param {String} phrase
   * @param {Int} numberOfResults
   * @return (Object) obj
@@ -205,8 +238,8 @@ const localSpace = (function () {
           throw new Error({ code: data.error.code, message: data.error.info });
         } else if (!data.query || !data.query.pages) {
           console.warn(data.query);
-          searchFallback(phrase);
-          // throw new Error({ code: 'NoSuchPage', message: `There is no pages for ${phrase}` });
+          // searchFallback(phrase);
+          throw new Error({ code: 'NoSuchPage', message: `There is no pages for ${phrase}` });
         } else {
           return data.query.pages || data.query.search;
         }
@@ -219,9 +252,9 @@ const localSpace = (function () {
   * clears the DOM from search results
   * @param {Obj} obj
   */
-  function clearData(dataElm) {
-    while (dataElm.firstChild) {
-      (dataElm.removeChild(dataElm.firstChild));
+  function clearData(wrapperElm) {
+    while (wrapperElm.firstChild) {
+      (wrapperElm.removeChild(wrapperElm.firstChild));
     }
   }
 
@@ -261,11 +294,48 @@ const localSpace = (function () {
       .then(() => {
         // console.log(`Second slideIn inside searchWikiData for cycle=${cycle}`);
         slideIn(dataElm);
-      })
+      });
   }
 
+  /*
+  * searchRandom() 
+  * looks for a random Wiki article
+  * @params None
+  * @return None
+  */
   function searchRandom() {
-
+    const preferedLang = navigator.language || navigator.userLanguage;
+    const httpAddr = `https://${preferedLang}.wikipedia.org/w/api.php?
+        action=query&
+        format=json&
+        generator=random&
+        origin=*`;
+    const headers = new Headers();
+    headers.append('Api-User-Agent', 'Example/1.0');
+    return fetch(httpAddr, { headers })
+      .then((resp) => {
+        if (resp.ok) return resp.json();
+        throw new Error('Could not get a random Wikipage!');
+      })
+      .then((data) => {
+        if (data.error) {
+          console.warn(data.error.info);
+          throw new Error({ code: data.error.code, message: data.error.info });
+        } else if (!data.query || !data.query.pages) {
+          console.warn(data.query);
+          // searchFallback(phrase);
+          throw new Error({ code: 'NoSuchPage', message: 'There is no pages found'});
+        } else {
+          return data.query.pages;
+        }
+      })
+      .then((data) => {
+        const pageid = Object.keys(data)[0];
+        moveUp();
+        saveState(pageid);
+        getPage(pageid);
+      })
+      .catch(err => Promise.reject(err));
   }
 
   /*
@@ -274,11 +344,10 @@ const localSpace = (function () {
   * @param {Obj} func
   * @param {Int} wait
   */
-  function debounce(func, wait) {
+  function debounce(func, wait, ...args) {
     let timeout;
     return () => {
       const context = this;
-      const args = arguments;
       const later = () => {
         timeout = null;
         func.apply(context, args);
@@ -300,36 +369,32 @@ const localSpace = (function () {
         getPage(e.state.pageId);
       } else {
         if (searchPhrase) console.log('searchPhrase exists');
-        else console.log(`searchPhrase doesn't exists`);
+        else console.log('searchPhrase doesn\'t exists');
         searchPhrase();
       }
     }
   };
 
-  const formElm = document.querySelector('.search');
-  const submitBtnElm = document.querySelector('#searchBtnSubmit');
-  const randomBtnElm = document.querySelector('#searchBtnRandom');
-  const inputElm = document.querySelector('#searchInput');
-  const dataElm = document.querySelector('.external__data');
-  const delayFnOnInput = debounce(searchPhrase, 250, false);
-  const keysNotAllowed = ['Meta', 'Alt', 'CapsLock', 'Shift', 'Control', 'Tab', 'Escape', 
-    'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'];
-
   // let cycle = 1;
 
-  formElm.addEventListener('submit', (e) => {
+  searchFormElm.addEventListener('submit', (e) => {
     e.preventDefault();
     return false; // to prevent changes in address bar
   });
-  submitBtnElm.addEventListener('click', searchPhrase);
+  // submitBtnElm.addEventListener('click', searchPhrase);
   randomBtnElm.addEventListener('click', searchRandom);
   inputElm.addEventListener('keyup', (e) => {
     // console.log(e.target.value);
-    console.log(e.key)    
-    console.log(`${e.key} is within not allowed symbols: ${keysNotAllowed.includes(e.key)}`);
+    console.log(e);
+    // console.log(`${e.key} is within not allowed symbols: ${keysNotAllowed.includes(e.key)}`);
     if (!keysNotAllowed.includes(e.key)) {
       delayFnOnInput();
     }
-    // cycle++;
   });
+  inputElm.addEventListener('keyup', (e) => {
+    if (!keysNotAllowed.includes(e.key)) {
+      resetOnEmptySearch();
+    }
+  });
+  inputElm.addEventListener('keyup', moveUp);
 }());
