@@ -21,3 +21,4 @@ tags
 .publish
 ex_files
 Thumbs.db
+package-lock.json

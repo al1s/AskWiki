@@ -25,7 +25,10 @@ const dirs = {
   buildPath: './build/'
 };
 
-const copiedJs = ['./node_modules/jasmine/fetch.js'];
+const copiedJs = [
+  './node_modules/whatwg-fetch/fetch.js',
+  './node_modules/es6-promise/dist/es6-promise.auto.js'
+];
 
 const postCssPlugins = [
   autoprefixer({ browsers: ['last 2 version', 'Safari >= 8'] })//,
@@ -176,8 +179,8 @@ gulp.task('serve', ['build'], () => {
   // Слежение за стилями
   gulp.watch(dirs.srcPath + '/*.css', ['watch:style']);
   // Слежение за добавочными JS
-  if(copiedJs.length) {
-    gulp.watch(copiedJs, ['watch:copied:js']);
+  if (copiedJs.length) {
+    gulp.watch(copiedJs, ['watch:copy:js']);
   }
   // Слежение за html
   gulp.watch([
@@ -188,7 +191,7 @@ gulp.task('serve', ['build'], () => {
   gulp.watch(dirs.srcPath + '/*.js', ['watch:js']);
 });
 
-function reload (done) {
+function reload(done) {
   browserSync.reload();
   done();
 }
